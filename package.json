@@ -2,7 +2,7 @@
   "name": "express-file-router",
   "version": "0.0.8",
   "description": "File-based router for express",
-  "main": "index.js",
+  "main": "server.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/rg1220/express-file-router"
@@ -10,7 +10,8 @@
   "author": "randy@randygroff.com",
   "license": "MIT",
   "dependencies": {
-    "express": "4.15.2"
+    "express": "4.15.2",
+    "express-rate-limit": "^6.6.0"
   },
   "devDependencies": {
     "bluebird": "^3.5.0"

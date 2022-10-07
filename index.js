@@ -1,8 +1,11 @@
-var path = require('path');
-var fs = require('fs');
-var Router = require('express').Router;
-var Request = require('./request');
-var Response = require('./response');
+const EventEmitter = require("events");
+const express = require("express");
+const path = require('path');
+const fs = require('fs');
+const Router = require('express').Router;
+const Request = require('./request');
+const Response = require('./response');
+const rateLimit = require('express-rate-limit');
 
 function LoadFolder(folder, options) {
   options = options || {};
@@ -33,10 +36,14 @@ function LoadFolder(folder, options) {
   });
 
   files.forEach(function(file) {
+    let props = require(`${folder}/${file}`);
+    console.info("Router for " + file + " loaded!");
     var method = file.replace('.js', '').toLowerCase();
 
     if (options.usePromise) {
-      router[method]('/', function(req, res, next) {
+      if(props.ratelimit) {
+        const ratelimit = rateLimit(props.ratelimit);
+      router[method]('/', ratelimit, function(req, res, next) {
         var request = new Request({
           method: req.method,
           params: req.params,
@@ -55,8 +62,34 @@ function LoadFolder(folder, options) {
             next(err);
           });
       });
+          } else {
+              router[method]('/', function(req, res, next) {
+        var request = new Request({
+          method: req.method,
+          params: req.params,
+          path: req.path,
+          query: req.query,
+          body: req.body,
+          headers: req.headers,
+          cookies: req.cookies
+        });
+
+        require(path.join(folder, file))(request)
+          .then(function(response) {
+            res.status(response.responseCode).json(response.data);
+          })
+          .catch(function(err) {
+            next(err);
+          });
+      });
+          }
     } else {
-      router[method]('/', require(path.join(folder, file)));
+        if(props.ratelimit) {
+        const ratelimit = rateLimit(props.ratelimit);
+      router[method]('/', ratelimit, require(path.join(folder, file)));
+            } else {
+                router[method]('/', require(path.join(folder, file)));
+            }
     }
   });
 
